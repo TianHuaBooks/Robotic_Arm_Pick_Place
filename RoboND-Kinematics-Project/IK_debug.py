@@ -33,7 +33,7 @@ class CalcObject:
    side_c = 1.25
    side_a2 = side_a * side_a
    side_c2 = side_c * side_c
-   side_2ac = side_a * side_c
+   side_2ac = 2 * side_a * side_c
    half_pi = np.pi / 2
 
    def __init__(self):
@@ -115,6 +115,7 @@ class CalcObject:
 	WC = EE - (0.303) * ROT_EE[:,2]
 
         # Calculate joint angles
+	#print("**WC:{}, EE:{}, ROT_EE:{}".format(WC, EE, ROT_EE))
 	theta1 = atan2(WC[1], WC[0])
 
         # triangle for theta2 and theta3
@@ -122,20 +123,31 @@ class CalcObject:
 	side_b2 = radius**2 + (WC[2]-0.75)**2 # d1: 0.75
 	side_b  = sqrt(side_b2)
 	angle_a = acos((side_b2 + CalcObject.side_c2 - CalcObject.side_a2) / (2 * side_b * CalcObject.side_c))
+	#print("** side_a2:{}, side_c2:{}, side_b2:{}, side_2ac:{}".format(CalcObject.side_a2, CalcObject.side_c2, side_b2, CalcObject.side_2ac))
 	angle_b = acos((CalcObject.side_a2 + CalcObject.side_c2 - side_b2) / CalcObject.side_2ac)
 	#angle_c = acos((CalcObject.side_a2 + side_b2 - CalcObject.side_c2) / (2 * CalcObject.side_a * side_b))
 
 	theta2 = CalcObject.half_pi - angle_a - atan2(WC[2] - 0.75, radius)
 	theta3 = CalcObject.half_pi - (angle_b + 0.036)  # 0.036 accounts for sag in link4 of -0.054m
 
+	print("** theta1:{}, theta2:{}, theta3:{}, angle_b:{}".format(theta1, theta2, theta3, angle_b))
 	R0_3 = self.mR0_3_Mat.evalf(subs={'q1': theta1, 'q2': theta2, 'q3': theta3})
 
 	R3_6 = R0_3.T * ROT_EE # use transpose matrix instead of inverse matrix to save computation
+	#R3_6 = R0_3.inv("LU") * ROT_EE 
 
         #Euler angles from rotation matrix
-	theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+	val1 = sqrt(R3_6[0,2]**2 + R3_6[2,2]**2)
+	val2 = R3_6[1,2]
+	#print("**val1:{}, val2:{}".format(val1, val2))
 	theta5 = atan2(sqrt(R3_6[0,2]**2 + R3_6[2,2]**2), R3_6[1,2])
-	theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+	#print("**theta5:{}".format(theta5))
+	if sin(theta5) < 0.0:
+	   theta4 = atan2(-R3_6[2,2], R3_6[0,2])
+	   theta6 = atan2(R3_6[1,1], -R3_6[1,0])
+	else:
+	   theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+	   theta6 = atan2(-R3_6[1,1], R3_6[1,0])
 	return theta1, theta2, theta3, theta4, theta5, theta6, WC
 
    def get_T_total(self):

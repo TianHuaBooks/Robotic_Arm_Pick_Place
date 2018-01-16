@@ -25,8 +25,8 @@ class CalcObject:
    side_c = 1.25
    side_a2 = side_a * side_a
    side_c2 = side_c * side_c
-   side_2ac = side_a * side_c
-   half_pi = np.pi / 2
+   side_2ac = 2.0 * side_a * side_c
+   half_pi = np.pi / 2.0
 
    def __init__(self):
         #
@@ -125,9 +125,15 @@ class CalcObject:
         R3_6 = R0_3.T * ROT_EE # use transpose matrix instead of inverse matrix to save computation
 
         #Euler angles from rotation matrix
-        theta4 = atan2(R3_6[2,2], -R3_6[0,2])
         theta5 = atan2(sqrt(R3_6[0,2]**2 + R3_6[2,2]**2), R3_6[1,2])
-        theta6 = atan2(-R3_6[1,1], R3_6[1,0])
+
+	# there are multiple solutions, adjust for theta4 and theta6
+	if sin(theta5) < 0.0:
+           theta4 = atan2(-R3_6[2,2], R3_6[0,2])
+           theta6 = atan2(R3_6[1,1], -R3_6[1,0])
+	else:
+           theta4 = atan2(R3_6[2,2], -R3_6[0,2])
+           theta6 = atan2(-R3_6[1,1], R3_6[1,0])
         return theta1, theta2, theta3, theta4, theta5, theta6, WC
 
    def get_T_total(self):
